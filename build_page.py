@@ -192,7 +192,7 @@ TEMPLATE = """<!DOCTYPE html>
 <div class="wrap">
   <header>
     <h1>CCA-F Primer</h1>
-    <p class="sub">Claude Certified Architect &ndash; Foundations (CCAR-F) &middot; one question, one answer</p>
+    <p class="sub">Claude Certified Architect &ndash; Foundations (CCA-F) &middot; one question, one answer</p>
   </header>
 
   <div class="bar">

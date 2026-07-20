@@ -1,6 +1,6 @@
 # CCA-F Primer — One Question, One Answer
 
-Rapid-recall drill for **Claude Certified Architect – Foundations (CCAR-F)**, built from Exam Guide v1.0 (Effective July 2026) task statements 1.1–5.6 and the §17 Appendix.
+Rapid-recall drill for **Claude Certified Architect – Foundations (CCA-F)**, built from Exam Guide v1.0 (Effective July 2026) task statements 1.1–5.6 and the §17 Appendix.
 
 Format: one question, one short answer + a one-line reason. The real exam is scenario-based multiple choice — this primer covers the *facts and judgment rules* those scenarios are built on.
 
@@ -13,7 +13,7 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 | D5 Context Management & Reliability | 15% | 34 |
 | **Total** | | **176** |
 
-11 questions were added after cross-checking against the 2026-06-13 practice exam (22 missed items) — see the "Weak-spot index" at the end.
+11 questions were added after cross-checking against a practice exam to close gaps in coverage.
 
 ---
 
@@ -80,7 +80,7 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 ### 1.3 Subagent invocation & context passing
 
 **Q19.** What mechanism spawns a subagent?
-**A.** The `Task` tool — and `Task` must be in the parent's `allowedTools` or spawning silently fails.
+**A.** The `Task` tool — and `Task` must be in the parent's `allowedTools`; without it the model can't spawn subagents at all.
 
 **Q20.** How do you run subagents in parallel?
 **A.** Emit multiple `Task` tool calls in a *single* coordinator response.
@@ -151,7 +151,7 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 ### 1.7 Session management
 
 **Q40.** What flag continues the most recent session?
-**A.** `--continue` — resumes the latest session immediately, no picking.
+**A.** `--continue` — resumes the most recent session in the current directory immediately, no picking.
 
 **Q41.** What do you use to resume a *specific* prior session?
 **A.** `--resume <session-name>` — selects by name/ID rather than recency.
@@ -204,7 +204,7 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 **A.** The agent can't decide whether to retry, fix input, or escalate.
 
 **Q55.** What field tells the agent not to retry a business-rule rejection?
-**A.** `retriable: false`, plus a customer-friendly explanation it can relay.
+**A.** `retriable: false`, plus a customer-friendly explanation it can relay. (A structured-error design convention, not a field defined in the MCP spec.)
 
 **Q56.** A search returns zero rows vs. the search service times out. Must these look different?
 **A.** Yes — a valid empty result is not an access failure, and conflating them corrupts the coordinator's decision.
@@ -282,7 +282,7 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 **A.** `/memory` — use it to diagnose inconsistent behavior across a repo.
 
 **Q77.** How do you keep CLAUDE.md modular instead of monolithic?
-**A.** `@import` syntax referencing external standards files.
+**A.** Import external standards files with `@path/to/file` (e.g. `@docs/testing-standards.md`) — often called "@import syntax" informally.
 
 **Q78.** A 900-line CLAUDE.md covers testing, styling, and infra. Better structure?
 **A.** Split into topic files under `.claude/rules/` (testing.md, styling.md…).
@@ -311,7 +311,7 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 **A.** `argument-hint`.
 
 **Q86.** How do you customize a team skill just for yourself without forking the repo?
-**A.** Create a personal variant under `~/.claude/skills/` with a different name.
+**A.** Create a personal skill with the **same name** under `~/.claude/skills/<skill-name>/SKILL.md` — on a name collision, personal overrides project. Skill precedence: enterprise > personal > project > plugins. Note this is the *opposite* of settings precedence (where project overrides user), which is why it's a common trap.
 
 **Q87.** Skill vs. CLAUDE.md — decision rule?
 **A.** Skill = long procedure loaded on demand; CLAUDE.md = short conventions needed always.
@@ -376,7 +376,7 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 **A.** `--output-format json`, with `--json-schema` to enforce the shape.
 
 **Q105.** Minimum-privilege tool grant for a CI review job?
-**A.** `--allowedTools "Read,Grep"` — `--dangerously-skip-permissions` is the over-privileged distractor.
+**A.** `--allowedTools "Read,Grep"` — `--dangerously-skip-permissions` is the over-privileged distractor. (Strictly, `--allowedTools` is the *no-prompt* allowlist and `--tools` restricts availability; in headless `-p` mode there's nobody to approve a prompt, so `--allowedTools` effectively restricts.)
 
 **Q106.** Why not have the session that wrote the code review it?
 **A.** It retains its own generation reasoning and is less likely to spot its own flawed assumptions.
@@ -631,13 +631,18 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 
 | Purpose | Flag |
 |---|---|
-| Resume most recent session | `--continue` |
+| Resume most recent session in the current directory | `--continue` |
 | Resume a named/specific session | `--resume <session-name>` |
-| Branch from shared baseline | `fork_session` |
+| Branch from shared baseline | `--fork-session` (with `--resume` / `--continue`) |
 | Non-interactive / headless | `-p` / `--print` |
 | JSON output | `--output-format json` |
-| Enforce output schema | `--json-schema` |
+| Enforce output schema | `--json-schema` (print mode `-p` only) |
 | Least-privilege tools | `--allowedTools "Read,Grep"` |
+
+Notes:
+
+- `--fork-session` is the **CLI** flag. The Agent SDK option is `fork_session` (Python) / `forkSession` (TypeScript) — Q24 / Q42 / Q45 are SDK context.
+- `--allowedTools` controls which tools run *without a permission prompt*; `--tools` restricts which tools are *available at all*. In headless `-p` mode `--allowedTools` effectively restricts, because prompts can't be approved — which is why it's the exam answer for CI least-privilege.
 
 ### Slash commands
 
@@ -653,6 +658,7 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 | `"auto"` | May return text instead of calling a tool |
 | `"any"` | Must call some tool |
 | `{"type":"tool","name":"x"}` | Must call tool `x` |
+| `"none"` | Prevents all tool use — text-only reply |
 
 ### Config mechanisms
 
@@ -666,6 +672,8 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 | `.mcp.json` | Yes | At connection |
 | `~/.claude.json` | No (personal) | At connection |
 
+Skill precedence on a same-name collision: **enterprise > personal > project > plugins**. (Opposite direction from settings precedence, where project overrides user.)
+
 ### Distractor patterns to eliminate on sight
 
 - Switch to a larger model / bigger context window
@@ -675,46 +683,11 @@ Format: one question, one short answer + a one-line reason. The real exam is sce
 - Keep retrying (when the information isn't in the source)
 - Return an empty result on error (indistinguishable from a valid empty result)
 - Grant all tools / `--dangerously-skip-permissions`
+- "Project skills always override personal ones" (backwards — personal wins on a name collision)
 
 ### Out of scope — don't over-study
 
 Fine-tuning, API auth/billing, MCP server hosting & infra, model internals, RLHF/Constitutional AI, embeddings & vector DBs, computer use, vision, streaming/SSE, rate limits & pricing, OAuth/key rotation, cloud provider config, benchmarking, prompt-caching internals, tokenization.
-
----
-
-## Weak-spot index — from the 2026-06-13 practice exam (38/60)
-
-22 missed items, by scenario: **Customer Support 7 · CI/CD 7 · Code Generation 5 · Multi-Agent Research 3.** Two scenarios account for 64% of the damage.
-
-| Missed topic | Practice IDs | Primer coverage |
-|---|---|---|
-| False positive reduction | 850, 864 | Q113, Q141 |
-| Batch processing | 657, 681 | Q131–Q138 |
-| Tool selection reliability | 654, 739 | Q29, Q115–Q117 |
-| Error propagation | 761, 770 | Q56, Q57, Q158–Q159 |
-| Custom slash commands / skills | 709, 726 | Q88, Q89 |
-| Multi-step workflow enforcement & orchestration | 625, 712 | Q26, Q30 |
-| Parallel tool execution | 718 | Q8–Q10 |
-| Self-evaluation patterns | 744 | Q31 |
-| Tool interface design | 626 | Q47–Q51 |
-| CLAUDE.md hierarchy | 710 | Q75 |
-| MCP server integration | 719 | Q66, Q68 |
-| Iterative refinement | 723 | Q98 |
-| Tool distribution | 781 | Q63 |
-| Classification consistency / prompt specificity | 839, 844 | Q110–Q111 |
-| Structured output in CI | 841 | Q104 |
-
-**Five topics had no primer coverage before this pass and are now added:**
-
-1. **Parallel tool execution** (Q8–Q10) — batching tool calls within one turn to cut round-trips. Distinct from parallel *subagents* (Q20); you missed 718 on exactly this distinction.
-2. **Self-evaluation / self-critique** (Q31) — draft-completeness check before responding. Missed on 744.
-3. **Inline reasoning + confidence per finding** (Q141–Q142) — the bottleneck is developer triage time, not finding count. Missed on 864.
-4. **Multi-concern request handling** (Q29–Q30) — few-shot for tool *sequence*, plus parallel investigation over shared context. Missed on both 654 and 712.
-5. **Task-type-scoped exemplar context** (Q88) — exemplars useful for one task type belong in a skill, not CLAUDE.md. Missed on 709.
-
-**One discrepancy to be aware of** (Q115): the archived practice exam's answer to 739 says "4–6 few-shot examples," while Exam Guide v1.0 §4.2 says "2–4." The count is not the discriminator — targeting ambiguous cases and showing the rejected alternative is. Trust the guide's number, but don't eliminate an option on count alone.
-
-**Priority order for drilling**, combining your practice result with the domain weights: D1 §1.3–1.4 (Customer Support enforcement + parallel execution, 27% weight) → D4 §4.1/4.6 (CI false positives, 20%) → D2 §2.2 (error propagation) → the rest.
 
 ---
 
